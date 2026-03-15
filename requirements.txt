@@ -11,5 +11,4 @@ chromadb
 sentence-transformers
 pypdf
 python-docx
-python-docx2txt
 jq
