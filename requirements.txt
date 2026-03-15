@@ -10,6 +10,6 @@ langchain-core
 chromadb
 sentence-transformers
 pypdf
-unstructured
 python-docx
+python-docx2txt
 jq
