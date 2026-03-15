@@ -8,7 +8,7 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader, JSONLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,16 +17,12 @@ from langchain_core.runnables import RunnablePassthrough
 
 CHROMA_DIR = "./chroma_db"
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
-# Global vectordb reference so we can close it before deleting
 _vectordb = None
 
 
 def release_vectordb():
-    """Close the ChromaDB connection and release all file locks."""
     global _vectordb
     if _vectordb is not None:
         try:
@@ -57,7 +53,6 @@ def load_document(file_path: str):
 def ingest_document(file_path: str):
     global _vectordb
 
-    # Release lock before clearing old DB
     release_vectordb()
     time.sleep(0.4)
 
@@ -65,7 +60,7 @@ def ingest_document(file_path: str):
         try:
             shutil.rmtree(CHROMA_DIR)
         except PermissionError:
-            pass  # If still locked, Chroma will overwrite anyway
+            pass
 
     docs = load_document(file_path)
 
@@ -96,7 +91,7 @@ def get_qa_chain():
         search_kwargs={
             "k": 6,
             "fetch_k": 18,
-            "lambda_mult": 0.65   # balance diversity vs relevance
+            "lambda_mult": 0.65
         }
     )
 
