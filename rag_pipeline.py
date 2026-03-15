@@ -8,7 +8,6 @@ from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader, JSONLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,9 +16,16 @@ from langchain_core.runnables import RunnablePassthrough
 
 CHROMA_DIR = "./chroma_db"
 
-embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
-
 _vectordb = None
+_embeddings = None
+
+
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        from langchain_community.embeddings import FastEmbedEmbeddings
+        _embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+    return _embeddings
 
 
 def release_vectordb():
@@ -72,7 +78,7 @@ def ingest_document(file_path: str):
     chunks = splitter.split_documents(docs)
 
     _vectordb = Chroma.from_documents(
-        chunks, embeddings, persist_directory=CHROMA_DIR
+        chunks, get_embeddings(), persist_directory=CHROMA_DIR
     )
     return len(chunks)
 
@@ -83,16 +89,12 @@ def get_qa_chain():
     if _vectordb is None:
         _vectordb = Chroma(
             persist_directory=CHROMA_DIR,
-            embedding_function=embeddings
+            embedding_function=get_embeddings()
         )
 
     retriever = _vectordb.as_retriever(
         search_type="mmr",
-        search_kwargs={
-            "k": 6,
-            "fetch_k": 18,
-            "lambda_mult": 0.65
-        }
+        search_kwargs={"k": 6, "fetch_k": 18, "lambda_mult": 0.65}
     )
 
     llm = ChatGroq(

@@ -2,6 +2,9 @@ import os
 import shutil
 import time
 
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("chroma_db", exist_ok=True)
+
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -12,7 +15,7 @@ from rag_pipeline import ingest_document, get_qa_chain, release_vectordb
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"pdf", "csv", "txt", "doc", "docx", "json", "md"}
 
@@ -81,17 +84,14 @@ def delete():
     filename = data.get("filename", "").strip()
 
     try:
-        # Release ChromaDB lock first
         release_vectordb()
         time.sleep(0.5)
 
-        # Delete the uploaded file
         if filename:
             file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-        # Delete the vector database
         if os.path.exists("./chroma_db"):
             shutil.rmtree("./chroma_db")
 
@@ -99,8 +99,6 @@ def delete():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-os.makedirs("uploads", exist_ok=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
