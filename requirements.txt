@@ -1,0 +1,14 @@
+flask
+langchain
+langchain-community
+langchain-groq
+langchain-huggingface
+langchain-text-splitters
+chromadb
+sentence-transformers
+pypdf
+python-docx
+unstructured
+tiktoken
+python-dotenv
+gunicorn
